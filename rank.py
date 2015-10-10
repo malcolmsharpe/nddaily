@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import os.path
@@ -80,6 +81,18 @@ for entry in entries:
     if (zone, floor) != (4, 6):
         continue
 
+    # Download display name if we don't know it
+    users_path = 'data/users'
+    if not os.path.exists(users_path):
+        os.mkdir(users_path)
+    sum_path = os.path.join(users_path, '%s.txt' % steamid)
+    if not os.path.exists(sum_path):
+        sum_url = ('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s' %
+            (api_key, steamid))
+        f = urlopen(sum_url)
+        body = f.read()
+        file(sum_path, 'w').write(body)
+
     # Download metadata if we don't have it
     meta_path = os.path.join(date_path, '%s.json' % ugcid)
 
@@ -104,6 +117,11 @@ for entry in entries:
         body = f.read()
         file(ugc_path, 'w').write(body)
 
+    # Find display name within the summary file
+    f = file(sum_path, 'r')
+    summary = json.load(f)
+    persona = summary['response']['players'][0]['personaname']
+
     # Find run summary time within the UGC file
     f = file(ugc_path, 'r')
     ugc_data = f.read()
@@ -121,16 +139,23 @@ for entry in entries:
 
     disp = '%02d:%02d.%02d' % (elapsed_m, disp_s, disp_cs)
 
-    print '#%4s    %s    %s    %s    %d-%d    (%s)' % (
-        rank, steamid, score, disp, zone, floor, ugcid)
+    print '#%4s    %20s (%s)    %s    %s    %d-%d    (%s)' % (
+        rank, persona, steamid, score, disp, zone, floor, ugcid)
     n += 1
 
-    recs.append( (elapsed_ms, steamid, disp) )
+    recs.append( (elapsed_ms, disp, persona, steamid, score) )
 
 print
 print 'Number of finishers = %d' % n
 print
 
+wr = csv.writer(file('out/%s-%s-%s.csv' % (year, month, day), 'w'))
+wr.writerow( ['Run Duration', 'Persona', 'Steam ID', 'Score'] )
+
 recs.sort()
-for t, sid, disp in recs:
-    print '%s    %s' % (sid, disp)
+for t, disp, pers, sid, score in recs:
+    print '%s    %s' % (disp, pers)
+
+    # Note: the purpose of the single-quote for the Steam ID is to force Google Sheets to interpret it as
+    # plain text rather than a number. As a number, it can be converted to scientific notation.
+    wr.writerow( [disp, pers.encode('utf_8'), "'" + sid, score] )
