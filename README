@@ -1,0 +1,7 @@
+Requires a Steam API key in the file apikey.txt.
+
+Example usage:
+    $ python rank.py '11/10/2015'
+
+Places temporary data in the 'data' subdirectory.
+Places output CSV in the 'out' subdirectory.

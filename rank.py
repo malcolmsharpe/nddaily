@@ -15,6 +15,9 @@ day, month, year = date.split('/')
 
 api_key = file('apikey.txt', 'r').read().strip()
 
+if not os.path.exists('data'):
+    os.mkdir('data')
+
 date_path = 'data/%s-%s-%s' % (year, month, day)
 if not os.path.exists(date_path):
     os.mkdir(date_path)
@@ -148,6 +151,9 @@ for entry in entries:
 print
 print 'Number of finishers = %d' % n
 print
+
+if not os.path.exists('out'):
+    os.mkdir('out')
 
 wr = csv.writer(file('out/%s-%s-%s.csv' % (year, month, day), 'w'))
 wr.writerow( ['Run Duration', 'Persona', 'Steam ID', 'Score'] )
