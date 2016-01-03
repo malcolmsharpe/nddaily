@@ -1,4 +1,7 @@
+import csv
 import datetime
+import os
+import os.path
 import re
 from urllib2 import urlopen
 from xml.dom.minidom import parse
@@ -68,3 +71,24 @@ def download_daily(board_url):
         recs.append(rec)
 
     return recs
+
+def read_dailies():
+    # Some entries are bogus. All real boards have well over 100 entries, and all bogus boards well under.
+    REAL_THRESHOLD = 100
+
+    dailies = []
+
+    csv_re = re.compile(r'daily_([0-9_]*)\.csv')
+    csvs = [fn for fn in os.listdir('raw') if fn.endswith('csv')]
+    for fn in csvs:
+        path = os.path.join('raw', fn)
+        rd = csv.DictReader(file(path, 'r'))
+        recs = list(rd)
+
+        date_str = csv_re.match(fn).group(1)
+        when = datetime.datetime.strptime(date_str, '%Y_%m_%d').date()
+
+        if len(recs) >= REAL_THRESHOLD:
+            dailies.append( (when, recs) )
+
+    return dailies
