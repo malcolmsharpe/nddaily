@@ -4,6 +4,8 @@ from collections import defaultdict
 import datetime
 import math
 
+from common import *
+
 TOP_NS = [1, 5, 10, 20, 50, 100]
 
 # Some entries are bogus. All real boards have well over 100 entries, and all bogus boards well under.
