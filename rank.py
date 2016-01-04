@@ -7,6 +7,8 @@ import sys
 from urllib2 import urlopen
 from xml.dom.minidom import parse
 
+import common
+
 # day/month/year
 # example: 7/10/2015
 date = sys.argv[1]
@@ -84,18 +86,6 @@ for entry in entries:
     if (zone, floor) != (4, 6):
         continue
 
-    # Download display name if we don't know it
-    users_path = 'data/users'
-    if not os.path.exists(users_path):
-        os.mkdir(users_path)
-    sum_path = os.path.join(users_path, '%s.txt' % steamid)
-    if not os.path.exists(sum_path):
-        sum_url = ('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s' %
-            (api_key, steamid))
-        f = urlopen(sum_url)
-        body = f.read()
-        file(sum_path, 'w').write(body)
-
     # Download metadata if we don't have it
     meta_path = os.path.join(date_path, '%s.json' % ugcid)
 
@@ -120,10 +110,8 @@ for entry in entries:
         body = f.read()
         file(ugc_path, 'w').write(body)
 
-    # Find display name within the summary file
-    f = file(sum_path, 'r')
-    summary = json.load(f)
-    persona = summary['response']['players'][0]['personaname']
+    # Find display name
+    persona = common.get_persona(steamid)
 
     # Find run summary time within the UGC file
     f = file(ugc_path, 'r')

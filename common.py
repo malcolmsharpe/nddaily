@@ -1,5 +1,6 @@
 import csv
 import datetime
+import json
 import os
 import os.path
 import re
@@ -7,6 +8,7 @@ from urllib2 import urlopen
 from xml.dom.minidom import parse
 
 leaderboards_url = 'http://steamcommunity.com/stats/247080/leaderboards/?xml=1'
+api_key = file('apikey.txt', 'r').read().strip()
 
 # day/month/year
 # example: 7/10/2015
@@ -106,3 +108,27 @@ def read_dailies():
     return dailies
 
 STEAM_ID_NULL = '-1'
+
+def get_persona(steamid):
+    # Download display name if we don't know it
+    users_path = 'data/users'
+    if not os.path.exists(users_path):
+        os.mkdir(users_path)
+    sum_path = os.path.join(users_path, '%s.txt' % steamid)
+    if not os.path.exists(sum_path):
+        sum_url = ('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s' %
+            (api_key, steamid))
+        f = urlopen(sum_url)
+        body = f.read()
+        file(sum_path, 'w').write(body)
+
+    # Find display name within the summary file
+    f = file(sum_path, 'r')
+    try:
+        summary = json.load(f)
+    except Exception:
+        print 'Failed while loading persona JSON from %s' % sum_path
+        raise
+    persona = summary['response']['players'][0]['personaname']
+
+    return persona
