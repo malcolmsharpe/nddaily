@@ -51,7 +51,7 @@ class Leaderboards(object):
                     for child in url_node.childNodes:
                         if child.nodeType == child.CDATA_SECTION_NODE:
                             board_url = child.data.strip()
-                            ret.append( (when, board_url) )
+                            ret.append( (when, board_url, board_entries) )
         ret.sort()
 
         return ret
@@ -59,19 +59,31 @@ class Leaderboards(object):
 ENTRY_FIELDS = ['rank', 'score', 'steamid', 'ugcid', 'details']
 
 def download_daily(board_url):
-    f = urlopen(board_url)
-    dom = parse(f)
-
-    entries = dom.getElementsByTagName('entry')
     recs = []
-    for entry in entries:
-        rec = {}
-        for a in ENTRY_FIELDS:
-            rec[a] = entry.getElementsByTagName(a)[0].childNodes[0].data.strip()
-        recs.append(rec)
+
+    while True:
+        f = urlopen(board_url)
+        dom = parse(f)
+
+        entries = dom.getElementsByTagName('entry')
+        for entry in entries:
+            rec = {}
+            for a in ENTRY_FIELDS:
+                rec[a] = entry.getElementsByTagName(a)[0].childNodes[0].data.strip()
+            recs.append(rec)
+
+        # For dailies with >5000 entries, they are split into multiple requests.
+        board_url = None
+        for url_node in dom.getElementsByTagName('nextRequestURL'):
+            for child in url_node.childNodes:
+                if child.nodeType == child.CDATA_SECTION_NODE:
+                    board_url = child.data.strip()
+        if board_url == None:
+            break
 
     return recs
 
+# -> [(datetime.date, [{}])]
 def read_dailies():
     # Some entries are bogus. All real boards have well over 100 entries, and all bogus boards well under.
     REAL_THRESHOLD = 100
@@ -92,3 +104,5 @@ def read_dailies():
             dailies.append( (when, recs) )
 
     return dailies
+
+STEAM_ID_NULL = '-1'

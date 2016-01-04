@@ -8,15 +8,10 @@ from common import *
 
 TOP_NS = [1, 5, 10, 20, 50, 100]
 
-# Some entries are bogus. All real boards have well over 100 entries, and all bogus boards well under.
-REAL_THRESHOLD = 100
-
 dailies = read_dailies()
 
 newest = max(when for when, recs in dailies)
 print 'newest daily:  %s' % newest
-
-STEAM_ID_NULL = '-1'
 
 # steam id str -> [(datetime.date when, int rank)]
 id_ranks = defaultdict(lambda: [])
