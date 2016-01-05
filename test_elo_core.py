@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from scipy.optimize import check_grad
 
 from elo_core import *
@@ -43,3 +44,28 @@ def test_f_compare():
 
     np.testing.assert_almost_equal(val_naive, val_np)
     np.testing.assert_almost_equal(grad_naive, grad_np)
+
+def test_overflow():
+    rs = np.random.randn(10)
+
+    # Translating the input shouldn't change the result, but it will cause the naive
+    # computation to overflow.
+    rs += 1000
+
+    print 'Test input:  %s' % rs
+
+    with pytest.raises(OverflowError):
+        f_naive(rs)
+
+    val_py, grad_py = f_py(rs)
+    print
+    print 'Python value:  %s' % val_py
+    print 'Python gradient:  %s' % grad_py
+
+    val_np, grad_np = f_np(rs)
+    print
+    print 'Numpy value:  %s' % val_np
+    print 'Numpy gradient:  %s' % grad_np
+
+    np.testing.assert_almost_equal(val_py, val_np)
+    np.testing.assert_almost_equal(grad_py, grad_np)
