@@ -5,13 +5,16 @@ from collections import defaultdict
 import math
 import numpy as np
 import random
-from scipy.optimize import minimize
+from scipy.optimize import check_grad, minimize
 
 from common import *
 import elo_core
 
+# Don't do much optimization to get a faster end-to-end run.
 dry_run = False
 print 'Dry run?  %s' % dry_run
+
+print
 
 print 'Reading dailies'
 dailies = read_dailies()
@@ -27,13 +30,15 @@ for when, recs in dailies:
     for rec in recs:
         steamid = rec['steamid']
         if steamid != STEAM_ID_NULL:
-            out.append(rec)
-
             if steamid not in index_of_steamid:
                 index_of_steamid[steamid] = next_index
                 next_index += 1
             dailies_of_steamid[steamid] += 1
-    alldata.append(out)
+
+            out.append(index_of_steamid[steamid])
+
+    indexes = np.array(list(reversed(out)))
+    alldata.append(indexes)
 
 ndata = len(alldata)
 nvalid = ndata // 5
@@ -54,6 +59,8 @@ assert len(validation) == nvalid
 print 'Split %d days into %d training points and %d validation points' % (
     ndata, len(training), len(validation))
 
+global_data = training
+
 def callback(xk):
     #print 'callback' #FIXME
     pass
@@ -66,25 +73,19 @@ def neg_log_lik(xs, data):
     tot_val = 0.
     tot_grad = np.zeros_like(xs)
 
-    for recs in data:
+    for indexes in data:
         m += 1
-        k = len(recs)
-        rs = np.zeros(k)
 
-        for i, rec in enumerate(reversed(recs)):
-            steamid = rec['steamid']
-            rs[i] = -xs[index_of_steamid[steamid]]
+        rs = -xs[indexes]
 
         val, grad = elo_core.f_np(rs)
 
         # negate value because f returns un-negated log likelihood
         tot_val -= val
 
-        for i, rec in enumerate(reversed(recs)):
-            steamid = rec['steamid']
-            # this gradient is twice negated: once because we negate the value of f, and once because we
-            # negated the input to f
-            tot_grad[index_of_steamid[steamid]] += grad[i]
+        # this gradient is twice negated: once because we negate the value of f, and once because we
+        # negated the input to f
+        tot_grad[indexes] += grad
 
     tot_val /= m
     tot_grad /= m
@@ -94,7 +95,7 @@ def neg_log_lik(xs, data):
 def objfun(xs):
     print '  objfun'
 
-    val, grad = neg_log_lik(xs, training)
+    val, grad = neg_log_lik(xs, global_data)
 
     # Apply regularization
     val += 0.5 * global_regu * np.sum(xs**2)
@@ -156,6 +157,7 @@ print
 global_regu = best_regu
 print 'Re-optimizing on all data using regularization %.5g' % global_regu
 
+global_data = alldata
 final_x = do_optimize(best_x)
 
 print 'Done optimizing'
