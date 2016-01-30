@@ -1,6 +1,7 @@
 import csv
 import datetime
 import json
+import math
 import os
 import os.path
 import re
@@ -16,6 +17,10 @@ daily_re = re.compile('([0-9]+)/([0-9]+)/([0-9]{4})_PROD')
 
 # -> [(datetime.date, url string)]
 class Leaderboards(object):
+    CADENCE_SPEED = 'http://steamcommunity.com/stats/247080/leaderboards/740000/?xml=1'
+    DORIAN_SPEED = 'http://steamcommunity.com/stats/247080/leaderboards/741116/?xml=1'
+    DOVE_SPEED = 'http://steamcommunity.com/stats/247080/leaderboards/741329/?xml=1'
+
     def __init__(self):
         f = urlopen(leaderboards_url)
         self.dom = parse(f)
@@ -60,7 +65,7 @@ class Leaderboards(object):
 
 ENTRY_FIELDS = ['rank', 'score', 'steamid', 'ugcid', 'details']
 
-def download_daily(board_url):
+def download_leaderboard(board_url):
     recs = []
 
     while True:
@@ -132,3 +137,16 @@ def get_persona(steamid):
     persona = summary['response']['players'][0]['personaname']
 
     return persona
+
+def format_ms(ms):
+    cs = ms // 10
+    s  = cs // 100
+    m  = s  // 60
+
+    disp_cs = cs % 100
+    disp_s  = s  % 60
+
+    return '%02d:%02d.%02d' % (m, disp_s, disp_cs)
+
+def necrolab_points(rank):
+    return 1.7 / (math.log(rank / 100.0 + 1.03) / math.log(10))

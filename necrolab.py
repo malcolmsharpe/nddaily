@@ -28,9 +28,6 @@ for when, recs in dailies:
 # steam id, top n, total points, total dailies, total place
 entries = []
 
-def necrolab_points(rank):
-    return 1.7 / (math.log(rank / 100.0 + 1.03) / math.log(10))
-
 MAX_AGE = 100
 
 for steamid in id_ranks:

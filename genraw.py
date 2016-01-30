@@ -22,7 +22,7 @@ for when, board_url, board_entries in boards.query_dailies():
         print 'Downloading missing board: %s' % path
 
     if refresh:
-        recs = download_daily(board_url)
+        recs = download_leaderboard(board_url)
 
         rows = []
         rows.append(ENTRY_FIELDS)
