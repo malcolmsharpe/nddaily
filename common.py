@@ -5,8 +5,9 @@ import math
 import os
 import os.path
 import re
+import sys
 from urllib2 import urlopen
-from xml.dom.minidom import parse
+from xml.dom.minidom import parse, parseString
 
 leaderboards_url = 'http://steamcommunity.com/stats/247080/leaderboards/?xml=1'
 api_key = file('apikey.txt', 'r').read().strip()
@@ -14,6 +15,10 @@ api_key = file('apikey.txt', 'r').read().strip()
 # day/month/year
 # example: 7/10/2015
 daily_re = re.compile('([0-9]+)/([0-9]+)/([0-9]{4})_PROD')
+
+# https://twitter.com/Mendayen/status/687039791234465793
+invalid_char_re = re.compile(ur'[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]')
+assert not invalid_char_re.match('y')
 
 # -> [(datetime.date, url string)]
 class Leaderboards(object):
@@ -23,7 +28,13 @@ class Leaderboards(object):
 
     def __init__(self):
         f = urlopen(leaderboards_url)
-        self.dom = parse(f)
+        text = f.read()
+
+        # Work around invalid characters in the XML.
+        text = unicode(text, 'utf-8', 'ignore')
+        text = invalid_char_re.sub('', text)
+
+        self.dom = parseString(text)
 
     def query_dailies(self):
         name_nodes = self.dom.getElementsByTagName('name')
@@ -69,6 +80,7 @@ def download_leaderboard(board_url):
     recs = []
 
     while True:
+        print '  Downloading leaderboard at URL: %s' % board_url
         f = urlopen(board_url)
         dom = parse(f)
 
@@ -150,3 +162,6 @@ def format_ms(ms):
 
 def necrolab_points(rank):
     return 1.7 / (math.log(rank / 100.0 + 1.03) / math.log(10))
+
+def inv_necrolab_points(points):
+    return 100 * (10**(1.7/points) - 1.03)
